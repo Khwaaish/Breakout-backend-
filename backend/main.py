@@ -1,14 +1,15 @@
 """
 Closira Backend API - Main FastAPI Application
 """
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.database import init_db, get_db
 from app.logger import logger
-from app.schemas import HealthCheckResponse
+from app.schemas import HealthCheckResponse, CreateEnquiryRequest, EnquiryResponse
+from app.crud import EnquiryCRUD
 from app import crud, schemas
 
 # Create FastAPI application
@@ -72,6 +73,54 @@ async def health_check(db: Session = Depends(get_db)):
             timestamp=datetime.utcnow(),
             version="1.0.0"
         )
+
+
+@app.post(
+    "/enquiry",
+    response_model=EnquiryResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Enquiries"],
+    summary="Create a new enquiry",
+    description="Submit a new customer enquiry. The enquiry is validated and immediately queued for processing."
+)
+async def create_enquiry(
+    request: CreateEnquiryRequest,
+    db: Session = Depends(get_db)
+) -> EnquiryResponse:
+    """
+    Create a new customer enquiry.
+    
+    - **customer_name**: Name of the customer (required, min 1 char)
+    - **channel**: Communication channel - must be one of: whatsapp, email, call
+    - **message**: Customer message (required, min 1 char)
+    
+    Returns:
+        EnquiryResponse with job_id, status, and message
+        
+    Status Codes:
+        - 201: Enquiry successfully created and queued
+        - 422: Invalid request parameters
+    """
+    try:
+        # Create enquiry in database
+        enquiry = EnquiryCRUD.create_enquiry(
+            db=db,
+            customer_name=request.customer_name,
+            channel=request.channel.value,  # Extract enum value
+            message=request.message
+        )
+        
+        logger.info(f"Enquiry created: job_id={enquiry.job_id}, channel={request.channel}")
+        
+        # Return response
+        return EnquiryResponse(
+            job_id=str(enquiry.job_id),
+            status=enquiry.status,
+            message="Enquiry received and queued for processing"
+        )
+    except Exception as e:
+        logger.error(f"Error creating enquiry: {e}")
+        raise
 
 
 @app.get("/", tags=["Root"])
