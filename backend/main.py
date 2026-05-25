@@ -1,7 +1,7 @@
 """
 Closira Backend API - Main FastAPI Application
 """
-from fastapi import FastAPI, Depends, status
+from fastapi import FastAPI, Depends, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 from app.database import init_db, get_db
 from app.logger import logger
 from app.schemas import HealthCheckResponse, CreateEnquiryRequest, EnquiryResponse
-from app.crud import EnquiryCRUD
+from app.crud import EnquiryCRUD, TimelineEventCRUD
+from app.workers.background_tasks import process_enquiry_background
 from app import crud, schemas
 
 # Create FastAPI application
@@ -85,6 +86,7 @@ async def health_check(db: Session = Depends(get_db)):
 )
 async def create_enquiry(
     request: CreateEnquiryRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ) -> EnquiryResponse:
     """
@@ -109,10 +111,26 @@ async def create_enquiry(
             channel=request.channel.value,  # Extract enum value
             message=request.message
         )
-        
-        logger.info(f"Enquiry created: job_id={enquiry.job_id}, channel={request.channel}")
-        
-        # Return response
+
+        # Record creation timeline event using CRUD (no ORM in routes)
+        TimelineEventCRUD.create_timeline_event(db, enquiry.id, "ENQUIRY_CREATED")
+
+        # Log structured ENQUIRY_CREATED event
+        from app.logger import logger as _logger
+        import json as _json
+        from datetime import datetime as _dt
+
+        _logger.info(_json.dumps({
+            "timestamp": _dt.utcnow().isoformat(),
+            "event": "ENQUIRY_CREATED",
+            "enquiry_id": str(enquiry.id),
+            "details": f"job_id={enquiry.job_id}, channel={request.channel.value}"
+        }))
+
+        # Schedule background processing (uses separate DB session)
+        background_tasks.add_task(process_enquiry_background, enquiry.id)
+
+        # Return response immediately
         return EnquiryResponse(
             job_id=str(enquiry.job_id),
             status=enquiry.status,
