@@ -1,17 +1,17 @@
 """
 Closira Backend API - Main FastAPI Application
 """
-from fastapi import FastAPI, Depends, status, BackgroundTasks
+from fastapi import FastAPI, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.database import init_db, get_db
 from app.logger import logger
-from app.schemas import HealthCheckResponse, CreateEnquiryRequest, EnquiryResponse
-from app.crud import EnquiryCRUD, TimelineEventCRUD
-from app.workers.background_tasks import process_enquiry_background
-from app import crud, schemas
+from app.schemas import (
+    HealthCheckResponse,
+)
+from app.routes.enquiry import router as enquiry_router
 
 # Create FastAPI application
 app = FastAPI(
@@ -28,6 +28,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include enquiry routes from router
+app.include_router(enquiry_router)
 
 
 @app.on_event("startup")
@@ -76,69 +79,7 @@ async def health_check(db: Session = Depends(get_db)):
         )
 
 
-@app.post(
-    "/enquiry",
-    response_model=EnquiryResponse,
-    status_code=status.HTTP_201_CREATED,
-    tags=["Enquiries"],
-    summary="Create a new enquiry",
-    description="Submit a new customer enquiry. The enquiry is validated and immediately queued for processing."
-)
-async def create_enquiry(
-    request: CreateEnquiryRequest,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
-) -> EnquiryResponse:
-    """
-    Create a new customer enquiry.
-    
-    - **customer_name**: Name of the customer (required, min 1 char)
-    - **channel**: Communication channel - must be one of: whatsapp, email, call
-    - **message**: Customer message (required, min 1 char)
-    
-    Returns:
-        EnquiryResponse with job_id, status, and message
-        
-    Status Codes:
-        - 201: Enquiry successfully created and queued
-        - 422: Invalid request parameters
-    """
-    try:
-        # Create enquiry in database
-        enquiry = EnquiryCRUD.create_enquiry(
-            db=db,
-            customer_name=request.customer_name,
-            channel=request.channel.value,  # Extract enum value
-            message=request.message
-        )
 
-        # Record creation timeline event using CRUD (no ORM in routes)
-        TimelineEventCRUD.create_timeline_event(db, enquiry.id, "ENQUIRY_CREATED")
-
-        # Log structured ENQUIRY_CREATED event
-        from app.logger import logger as _logger
-        import json as _json
-        from datetime import datetime as _dt
-
-        _logger.info(_json.dumps({
-            "timestamp": _dt.utcnow().isoformat(),
-            "event": "ENQUIRY_CREATED",
-            "enquiry_id": str(enquiry.id),
-            "details": f"job_id={enquiry.job_id}, channel={request.channel.value}"
-        }))
-
-        # Schedule background processing (uses separate DB session)
-        background_tasks.add_task(process_enquiry_background, enquiry.id)
-
-        # Return response immediately
-        return EnquiryResponse(
-            job_id=str(enquiry.job_id),
-            status=enquiry.status,
-            message="Enquiry received and queued for processing"
-        )
-    except Exception as e:
-        logger.error(f"Error creating enquiry: {e}")
-        raise
 
 
 @app.get("/", tags=["Root"])
@@ -149,6 +90,9 @@ async def root():
         "version": "1.0.0",
         "docs": "/docs"
     }
+
+
+
 
 
 if __name__ == "__main__":

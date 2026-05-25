@@ -55,22 +55,14 @@ def process_enquiry_background(enquiry_id: int) -> None:
             EnquiryCRUD.update_enquiry_status(db, enquiry_id, "processed")
 
             # Create timeline event
-            TimelineEventCRUD.create_timeline_event(
-                db,
-                enquiry_id,
-                f"SOP matched: {sop_result['sop']}"
-            )
+            TimelineEventCRUD.create_timeline_event(db, enquiry_id, "SOP_MATCHED")
 
             _log_event("SOP_MATCHED", enquiry_id, json.dumps({"sop": sop_result["sop"]}))
         else:
             # Escalate
             EnquiryCRUD.escalate_enquiry(db, enquiry_id, reason="No SOP match found")
 
-            TimelineEventCRUD.create_timeline_event(
-                db,
-                enquiry_id,
-                "Escalated due to missing SOP"
-            )
+            TimelineEventCRUD.create_timeline_event(db, enquiry_id, "ESCALATION_TRIGGERED")
 
             _log_event("ESCALATION_TRIGGERED", enquiry_id, "No SOP match found")
 

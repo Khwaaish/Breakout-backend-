@@ -174,6 +174,39 @@ class EscalationResponse(BaseModel):
 
 
 # ============================================================================
+# History / Support Response Schemas
+# ============================================================================
+
+
+class FollowupItem(BaseModel):
+    delay_minutes: int
+    scheduled_time: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TimelineItem(BaseModel):
+    event: str
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class EnquiryHistoryResponse(BaseModel):
+    job_id: str
+    status: str
+    matched_sop: Optional[str] = None
+    escalation_reason: Optional[str] = None
+    followups: list[FollowupItem] = []
+    timeline: list[TimelineItem] = []
+
+    class Config:
+        from_attributes = True
+
+
+# ============================================================================
 # Legacy Health Check Schemas (Keep for backward compatibility)
 # ============================================================================
 
