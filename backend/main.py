@@ -59,24 +59,28 @@ async def health_check(db: Session = Depends(get_db)):
     Returns:
         HealthCheckResponse: Status of the API and database connection
     """
+    # Attempt a lightweight DB check
+    from sqlalchemy import text
     try:
-        # Try to access the database
-        db.execute("SELECT 1")
-        
-        return HealthCheckResponse(
-            status="healthy",
-            message="API is running and database connection is active",
-            timestamp=datetime.utcnow(),
-            version="1.0.0"
-        )
+        db.execute(text("SELECT 1"))
+        logger.info({
+            "event": "HEALTH_CHECK",
+            "status": "healthy",
+            "database": "connected",
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        return HealthCheckResponse(status="healthy", database="connected", timestamp=datetime.utcnow())
     except Exception as e:
         logger.error(f"Health check failed: {e}")
-        return HealthCheckResponse(
-            status="unhealthy",
-            message=f"Health check failed: {str(e)}",
-            timestamp=datetime.utcnow(),
-            version="1.0.0"
-        )
+        logger.info({
+            "event": "HEALTH_CHECK",
+            "status": "unhealthy",
+            "database": "error",
+            "timestamp": datetime.utcnow().isoformat(),
+            "error": str(e)
+        })
+        from fastapi import JSONResponse
+        return JSONResponse(status_code=500, content={"status": "unhealthy", "database": "error", "timestamp": datetime.utcnow().isoformat()})
 
 
 

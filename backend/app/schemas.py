@@ -213,9 +213,8 @@ class EnquiryHistoryResponse(BaseModel):
 class HealthCheckResponse(BaseModel):
     """Response schema for health check endpoint"""
     status: str
-    message: str
+    database: str
     timestamp: datetime
-    version: str
 
     class Config:
         from_attributes = True
