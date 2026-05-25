@@ -6,12 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from app.database import init_db, get_db
-from app.logger import logger
-from app.schemas import (
+from backend.app.database import init_db, get_db
+from backend.app.logger import logger
+from backend.app.schemas import (
     HealthCheckResponse,
 )
-from app.routes.enquiry import router as enquiry_router
+from backend.app.routes.enquiry import router as enquiry_router
 
 # Create FastAPI application
 app = FastAPI(

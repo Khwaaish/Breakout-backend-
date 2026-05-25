@@ -4,7 +4,7 @@ Database configuration and connection management
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-from app.logger import logger
+from backend.app.logger import logger
 
 # SQLite database URL
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./closira.db")

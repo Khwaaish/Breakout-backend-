@@ -25,7 +25,7 @@ def test_app(tmp_path, monkeypatch):
     database.Base.metadata.create_all(bind=database.engine)
     # Also ensure each model's table is created on the engine (robust across reloads)
     try:
-        from app.models import Enquiry, Followup, TimelineEvent
+        from backend.app.models import Enquiry, Followup, TimelineEvent
         Enquiry.__table__.create(bind=database.engine, checkfirst=True)
         Followup.__table__.create(bind=database.engine, checkfirst=True)
         TimelineEvent.__table__.create(bind=database.engine, checkfirst=True)

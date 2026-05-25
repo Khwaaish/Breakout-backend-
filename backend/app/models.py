@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from uuid import uuid4
-from app.database import Base
+from backend.app.database import Base
 
 
 class Enquiry(Base):

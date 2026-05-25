@@ -1,10 +1,10 @@
 """
 Background task worker functions for processing enquiries
 """
-from app.database import SessionLocal
-from app.services.sop_matcher import match_sop
-from app.crud import EnquiryCRUD, TimelineEventCRUD
-from app.logger import logger
+from backend.app.database import SessionLocal
+from backend.app.services.sop_matcher import match_sop
+from backend.app.crud import EnquiryCRUD, TimelineEventCRUD
+from backend.app.logger import logger
 from datetime import datetime
 import json
 

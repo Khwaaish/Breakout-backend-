@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException, status
 from sqlalchemy.orm import Session
-from app.database import get_db
-from app.schemas import (
+from backend.app.database import get_db
+from backend.app.schemas import (
     CreateEnquiryRequest,
     EnquiryResponse,
     FollowupRequest,
     FollowupResponse,
     EnquiryHistoryResponse,
 )
-from app.crud import EnquiryCRUD, TimelineEventCRUD, FollowupCRUD
-from app.workers.background_tasks import process_enquiry_background
-from app.logger import logger
+from backend.app.crud import EnquiryCRUD, TimelineEventCRUD, FollowupCRUD
+from backend.app.workers.background_tasks import process_enquiry_background
+from backend.app.logger import logger
 import json
 from datetime import datetime
 

@@ -7,8 +7,8 @@ import os
 # Add the backend directory to the path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app.database import engine, Base
-from app import models
+from backend.app.database import engine, Base
+from backend.app import models
 import json
 
 print("=" * 60)

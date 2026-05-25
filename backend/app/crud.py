@@ -3,7 +3,7 @@ CRUD operations for database models
 """
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
-from app import models, schemas
+from backend.app import models, schemas
 from datetime import datetime, timedelta
 from uuid import uuid4
 from typing import Optional
